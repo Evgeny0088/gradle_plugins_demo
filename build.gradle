@@ -1,0 +1,69 @@
+plugins{
+    id 'idea'
+    id 'java-gradle-plugin'
+    id 'groovy'
+    id 'maven-publish'
+    id 'jacoco'
+    id 'org.sonarqube' version '3.3'
+    id 'com.avast.gradle.docker-compose' version '0.14.3'
+}
+
+group = 'com.demoPlugins'
+version = '1.0.0'
+
+dependencies {
+    implementation (gradleApi())
+    testImplementation 'org.spockframework:spock-core:2.0-groovy-3.0'
+}
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
+gradlePlugin {
+    plugins {
+        create("fileDiff") {
+            id = "com.demoPlugins-fileDiff"
+            implementationClass = "com.demoPlugins.fileDiff.FileDiffPlugin"
+        }
+    }
+}
+
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(8))
+    }
+}
+
+test {
+    useJUnitPlatform()
+}
+
+sonarqube {
+    properties {
+        property 'sonar.host.url', 'http://localhost:9000'
+        property "sonar.sourceEncoding", "UTF-8"
+        property "sonar.groovy.binaries", "${sourceSets.test.output.classesDirs}"
+        property "sonar.jacoco.reportPath", "${project.buildDir}/jacoco/test.exec"
+    }
+}
+
+jacoco {
+    toolVersion = "0.8.7"
+    reportsDirectory = layout.buildDirectory.dir('jacocoReports')
+}
+
+jacocoTestReport {
+    reports {
+        xml.required = false
+        csv.required = false
+        html.outputLocation = layout.buildDirectory.dir('jacocoHtml')
+    }
+}
+
+test.finalizedBy jacocoTestReport
+
+tasks.named('sonarqube').configure {
+    dependsOn test
+}
